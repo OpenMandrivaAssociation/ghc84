@@ -1,4 +1,5 @@
 %global debug_package %{nil}
+%global _find_debuginfo_opts --no-ar-files
 Summary:	Glasgow Haskell Compiler 8.4.4
 Name:		ghc84
 Version:	8.4.4

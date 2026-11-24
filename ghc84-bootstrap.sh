@@ -1,7 +1,7 @@
 #!/bin/bash
 # Package adaptation: STAGE is the build root, GMP_PREFIX is
 # %{_libdir}/gmp612 when this hop still uses the private GMP, and
-# HOST_GCC is %{_libdir}/ghc-VER/bin/host-gcc. Install is -j1.
+# The C compiler is the bare name host-gcc on PATH. Install is -j1.
 # Build GHC 8.4.4 from its sources with the in-chain GHC 8.0.2.
 # Registerised, native code generator, no GHCi, static only, threaded RTS.
 # Host GMP, gnu11. Happy 1.19.5 and alex 3.2.7.4.
@@ -59,13 +59,14 @@ fi
 exec /usr/bin/gcc "${args[@]}"
 EOF
 chmod +x "$WORK/bin/gcc"
-mkdir -p "$(dirname "$HOST_GCC")"
-/bin/cp -f "$WORK/bin/gcc" "$HOST_GCC"
-chmod 755 "$HOST_GCC"
+# cGCC / settings record the bare name host-gcc. mockbuild cannot
+# create /usr/lib64/ghc-VER. The PATH export below finds this copy.
+/bin/cp -f "$WORK/bin/gcc" "$WORK/bin/host-gcc"
+chmod 755 "$WORK/bin/host-gcc"
 
 clean=$(printf '%s' "$PATH" | tr ':' '\n' | grep -v -e '\.ghcup' -e '\.cabal' -e '/ghc66-work/' -e '/ghc610-work/' -e '/ghc612-work/' -e '/ghc74-work/' -e '/ghc74-tools/' -e '/ghc78-work/' -e '/ghc80-work/' -e '/ghc84-work/' | paste -sd: -)
 export PATH="$BOOT/bin:$HAPPY/bin:$ALEX/bin:$WORK/bin:$clean"
-export CC="${HOST_GCC:?}"
+export CC="host-gcc"
 export CFLAGS="-std=gnu11 -w"
 unset LD_LIBRARY_PATH || true
 hash -r
@@ -123,7 +124,7 @@ fi
 
 phase "configure"
 if [ ! -f mk/config.mk ]; then
-	if ! ./configure --prefix="$PREFIX" --with-ghc="$BOOT/bin/ghc" CC="${HOST_GCC:?}" \
+	if ! ./configure --prefix="$PREFIX" --with-ghc="$BOOT/bin/ghc" CC="host-gcc" \
 		CFLAGS="-std=gnu11 -w" > "$WORK/logs/configure.log" 2>&1
 	then
 		fail "configure: $(errline "$WORK/logs/configure.log") $(tail -6 "$WORK/logs/configure.log" | tr '\n' ' ' | cut -c1-400)"
